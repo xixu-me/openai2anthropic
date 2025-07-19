@@ -67,6 +67,37 @@ export default {
 			// Convert Anthropic request to OpenAI format
 			const openaiRequest = convertAnthropicToOpenAI(anthropicRequest, env);
 
+			// Verify essential environment variables
+			if (!env.OPENAI_API_KEY) {
+				return new Response(
+					JSON.stringify({
+						error: {
+							type: 'configuration_error',
+							message: 'OPENAI_API_KEY secret is not configured. Run: npx wrangler secret put OPENAI_API_KEY',
+						},
+					}),
+					{
+						status: 500,
+						headers: { 'Content-Type': 'application/json' },
+					}
+				);
+			}
+
+			if (!env.OPENAI_API_URL) {
+				return new Response(
+					JSON.stringify({
+						error: {
+							type: 'configuration_error',
+							message: 'OPENAI_API_URL is not configured in wrangler.toml',
+						},
+					}),
+					{
+						status: 500,
+						headers: { 'Content-Type': 'application/json' },
+					}
+				);
+			}
+
 			// Send the transformed request to OpenAI
 			const openaiResponse = await fetch(env.OPENAI_API_URL, {
 				method: 'POST',
@@ -79,12 +110,28 @@ export default {
 
 			// Handle errors from OpenAI
 			if (!openaiResponse.ok) {
-				const error = await openaiResponse.json();
+				let errorMessage;
+				const contentType = openaiResponse.headers.get('content-type');
+
+				try {
+					if (contentType && contentType.includes('application/json')) {
+						const error = await openaiResponse.json();
+						errorMessage = `OpenAI API error: ${error.error?.message || 'Unknown error'}`;
+					} else {
+						// Handle non-JSON responses (like HTML error pages)
+						const errorText = await openaiResponse.text();
+						console.error('OpenAI API returned non-JSON response:', errorText.substring(0, 500));
+						errorMessage = `OpenAI API returned non-JSON response. Status: ${openaiResponse.status}. Check your API key and configuration.`;
+					}
+				} catch (parseError) {
+					errorMessage = `Failed to parse OpenAI API error response: ${parseError.message}`;
+				}
+
 				return new Response(
 					JSON.stringify({
 						error: {
 							type: 'proxy_error',
-							message: `OpenAI API error: ${error.error?.message || 'Unknown error'}`,
+							message: errorMessage,
 						},
 					}),
 					{
@@ -92,9 +139,7 @@ export default {
 						headers: { 'Content-Type': 'application/json' },
 					}
 				);
-			}
-
-			// Handle streaming responses
+			} // Handle streaming responses
 			if (stream) {
 				// Create a TransformStream to convert OpenAI stream format to Anthropic stream format
 				const { readable, writable } = new TransformStream();
