@@ -16,3 +16,7 @@ OPENAI_MODEL_ID = "gpt-4o"
 
 # Use wrangler secret put OPENAI_API_KEY to set your OpenAI API key
 # Command: npx wrangler secret put OPENAI_API_KEY
+
+# Use wrangler secret put ANTHROPIC_API_KEYS to set allowed API keys (comma-separated)
+# Command: npx wrangler secret put ANTHROPIC_API_KEYS
+# Example: "sk-ant-api03-xxx,sk-ant-api03-yyy" (multiple keys separated by comma)
