@@ -2,6 +2,12 @@ name = "anthropic2openai"
 main = "src/index.js"
 compatibility_date = "2025-07-19"
 
+[observability.logs]
+enabled = true
+
+[placement]
+mode = "smart"
+
 [vars]
 # Default OpenAI API URL
 OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
