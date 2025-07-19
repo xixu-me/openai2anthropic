@@ -17,42 +17,45 @@ export default {
 			return new Response('Not found', { status: 404 });
 		}
 
-		// Validate API Key
-		const authHeader = request.headers.get('Authorization');
-		if (!authHeader || !authHeader.startsWith('Bearer ')) {
-			return new Response(
-				JSON.stringify({
-					error: {
-						type: 'authentication_error',
-						message: 'Missing or invalid Authorization header. Please provide a valid API key.',
-					},
-				}),
-				{
-					status: 401,
-					headers: { 'Content-Type': 'application/json' },
-				}
-			);
+		// Validate API Key (only if REQUIRE_AUTH is enabled)
+		const requireAuth = env.REQUIRE_AUTH === 'true';
+
+		if (requireAuth) {
+			const authHeader = request.headers.get('Authorization');
+			if (!authHeader || !authHeader.startsWith('Bearer ')) {
+				return new Response(
+					JSON.stringify({
+						error: {
+							type: 'authentication_error',
+							message: 'Missing or invalid Authorization header. Please provide a valid API key.',
+						},
+					}),
+					{
+						status: 401,
+						headers: { 'Content-Type': 'application/json' },
+					}
+				);
+			}
+
+			const apiKey = authHeader.slice(7); // Remove 'Bearer ' prefix
+
+			// Validate against configured API keys (you can configure multiple keys)
+			const validApiKeys = env.ANTHROPIC_API_KEYS ? env.ANTHROPIC_API_KEYS.split(',') : [];
+			if (validApiKeys.length === 0 || !validApiKeys.includes(apiKey)) {
+				return new Response(
+					JSON.stringify({
+						error: {
+							type: 'authentication_error',
+							message: 'Invalid API key provided.',
+						},
+					}),
+					{
+						status: 401,
+						headers: { 'Content-Type': 'application/json' },
+					}
+				);
+			}
 		}
-
-		const apiKey = authHeader.slice(7); // Remove 'Bearer ' prefix
-
-		// Validate against configured API keys (you can configure multiple keys)
-		const validApiKeys = env.ANTHROPIC_API_KEYS ? env.ANTHROPIC_API_KEYS.split(',') : [];
-		if (validApiKeys.length === 0 || !validApiKeys.includes(apiKey)) {
-			return new Response(
-				JSON.stringify({
-					error: {
-						type: 'authentication_error',
-						message: 'Invalid API key provided.',
-					},
-				}),
-				{
-					status: 401,
-					headers: { 'Content-Type': 'application/json' },
-				}
-			);
-		}
-
 		try {
 			// Clone the request for reading
 			const requestClone = request.clone();
