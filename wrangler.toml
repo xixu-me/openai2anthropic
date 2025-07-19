@@ -1,0 +1,12 @@
+name = "anthropic2openai"
+main = "src/index.js"
+compatibility_date = "2025-07-19"
+
+[vars]
+# Default OpenAI API URL
+OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
+# Default OpenAI model to use regardless of what's requested from Anthropic
+OPENAI_MODEL_ID = "gpt-4o"
+
+# Use wrangler secret put OPENAI_API_KEY to set your OpenAI API key
+# Command: npx wrangler secret put OPENAI_API_KEY
